@@ -25,18 +25,29 @@ byte p5[8]={
   0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F};
 
 void setup()   {
+  analogWrite(6,255);
   initLCD();
+  /*
+    lcd.print((char)0);
+    delay(1000);
+    lcd.print((char)1);
+    delay(1000);    
+    lcd.print((char)2);
+    delay(1000);    
+    lcd.print((char)3);
+    delay(1000);    
+    lcd.print((char)4);
+    delay(1000);
+    lcd.clear();   
+   /**/ 
 }
 
 void loop(){
-  lcd.setCursor(0, 0);
+
   //ADC conversion
   unsigned int value = analogRead(POT_PIN);
-  lcd.print(value);
-  lcd.print(" - ");
-  lcd.print(map(value,0,1024,0,100));
-  lcd.print(" %   ");
-  printBar(map(value,0,1024,0,100));
+
+  printBar(map(value,0,1024,0,101));
 }
 
 void initLCD(){
@@ -48,46 +59,50 @@ void initLCD(){
   lcd.createChar(4, p5);
 
   lcd.begin(LCD_LENGTH, LCD_ROWS);
+  
+  
 
 }
 
 void printBar(int percentage){
-  lcd.setCursor(0,1);
-  double a=LCD_LENGTH/100*percent;
 
-  // drawing black rectangles on LCD
-  if (a>=1) {
-    for (int i=1;i<a;i++) {
-      lcd.print((char)4);
-      b=i;
-    }
-    a=a-b;
+  double ratio = 100/(LCD_LENGTH*5);
+  double numberOfBars = percentage/ratio;
+  
+  int blocks      = floor(numberOfBars/5);
+  int remainder   = numberOfBars - (blocks*5);
+  int emptyBlocks = LCD_LENGTH-ceil(numberOfBars/5); 
+  
+  lcd.setCursor(0, 0);  
+  lcd.print(percentage);
+  lcd.print("% ");
+  lcd.setCursor(0, 1);    
+  
+  for(int i = 0; i < blocks;i++){
+    lcd.print((char)4);
   }
 
-  peace=a*5;
-
-  // drawing charater's colums
-  switch (peace) {
-  case 0:
-    break;
-  case 1:
-    lcd.print((char)0);
-    break;
-  case 2:
-    lcd.print((char)1);
-    break;
-  case 3:
-    lcd.print((char)2);
-    break;
-  case 4:
-    lcd.print((char)3);
-    break;
+  if(remainder > 0){
+      // drawing charater's colums
+      switch (remainder) {
+      case 0:
+        break;
+      case 1:
+        lcd.print((char)0);
+        break;
+      case 2:
+        lcd.print((char)1);
+        break;
+      case 3:
+        lcd.print((char)2);
+        break;
+      case 4:
+        lcd.print((char)3);
+        break;
+      }
   }
+  for(int i = 0; i < emptyBlocks;i++) lcd.print(" ");
 
-  //clearing line
-  for (int i =0;i<(LCD_LENGTH-b);i++) {
-    lcd.print(" ");
-  }
 }
 
 
