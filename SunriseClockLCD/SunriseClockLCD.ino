@@ -1,4 +1,4 @@
-#define TEST_MODE
+//#define TEST_MODE
 
 #define LCD_LENGTH 8.0
 #define LCD_ROWS 2
@@ -56,7 +56,7 @@ byte p5[8]={
 
 
 #ifdef TEST_MODE
-unsigned long  DELAY_TOTAL_TIME = 10;  //seconds
+unsigned long  DELAY_TOTAL_TIME = 1;  //seconds
 unsigned long DELAY_ENABLE_TIME = 5; //in seconds
 //unsigned int ledBrightnessDelay = 0;//(DELAY_TOTAL_TIME*60*1000)/MAX_COUNTER; //in miliseconds
 unsigned int mode = 1;
@@ -69,7 +69,7 @@ unsigned int mode = 0;
 
 unsigned long button2Hold = 0;
 
-unsigned long ledBrightnessDelay = 0;//(DELAY_TOTAL_TIME*60*1000)/MAX_COUNTER; //in miliseconds
+unsigned long ledBrightnessDelay = (DELAY_TOTAL_TIME*1000)/MAX_COUNTER; //in miliseconds
 unsigned int inputThresholdLevel = 15;
 unsigned int inputThresholdTime = 20;  //in seconds
 unsigned long maxAudio = 0;
@@ -163,10 +163,10 @@ int buttonPushed(int pinNum) {
 int prevPotValue;
 int onModeBrightness = 0;
 float brightnessEXP = 0;
-int backlit = 100;
+int backlit = 30;
 void setup(){
 
-  ledBrightnessDelay = (DELAY_TOTAL_TIME*1000)/MAX_COUNTER; //in miliseconds
+  
 #ifdef TEST_MODE
   Serial.begin(9600); 
   Serial.write("");
@@ -218,7 +218,7 @@ void setup(){
 
   prevPotValue = onModeBrightness;
   adjustLed(6, backlit);
-}
+} //***************   END OF SETUP METHOD
 
 int lastButtonPressed = 0;
 
@@ -243,7 +243,7 @@ void adjustBacklit(int backVal, int lightVal){
    else backVal-= adj;
   /**/
   adjustedBrightness = backVal;
-  adjustLed(6, backVal);
+//  adjustLed(6, backVal);
 }
 /**/
 void loop(){
@@ -254,7 +254,7 @@ void loop(){
   if(abs(millis()-button2Hold) > 200){
     backlit = analogRead(POT_PIN)/4;
     adjustBacklit(backlit,map(lightValue,500,1024,0,150));
-    delay(500);
+    //delay(500);
   }  
 
   if(abs(millis()-lastAdjusted) > 200){
@@ -475,9 +475,7 @@ void setBrightness(int brightness){
     adjustLed(STRIP2_PIN, str2);      
     adjustLed(STRIP3_PIN, str3); 
   }
-#ifdef TEST_MODE
-  delay(750);
-#endif
+
 }
 
 
@@ -558,10 +556,14 @@ void updateDisplay(){
 
     unsigned int time_in_mode = (millis() - timeElapsed) / 1000 / 60; //time in seconds)
     if(mode == 1 || mode ==3){
-      lcd.clear();
+      lcd.setCursor(0,0);
       lcd.print("M");
       lcd.print(mode);
-      printBar(map(count,0,MAX_COUNTER,0,100));
+      lcd.print(" ");
+//      lcd.print(ledBrightnessDelay);
+      lcd.print(count);
+      lcd.print("    ");      
+      printBar(map(count,0,MAX_COUNTER,0,100),1);
     } 
     else {
 
@@ -606,7 +608,7 @@ void initLCD(){
 
 }
 
-void printBar(int percentage){
+void printBar(int percentage,int row){
 
   double ratio = 100/(LCD_LENGTH*5);
   double numberOfBars = percentage/ratio;
@@ -615,10 +617,8 @@ void printBar(int percentage){
   int remainder   = numberOfBars - (blocks*5);
   int emptyBlocks = LCD_LENGTH-ceil(numberOfBars/5); 
 
-  lcd.setCursor(0, 0);  
-  lcd.print(percentage);
-  lcd.print("% ");
-  lcd.setCursor(0, 1);    
+
+  lcd.setCursor(0, row);    
 
   for(int i = 0; i < blocks;i++){
     lcd.print((char)4);
@@ -646,6 +646,7 @@ void printBar(int percentage){
   for(int i = 0; i < emptyBlocks;i++) lcd.print(" ");
 
 }
+
 
 
 
