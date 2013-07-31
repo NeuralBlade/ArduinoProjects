@@ -1,5 +1,7 @@
 //#define TEST_MODE
 
+#define LCD_LENGTH 8.0
+#define LCD_ROWS 2
 
 //#include <LiquidCrystal_8x2.h>
 #include <LiquidCrystal.h>
@@ -39,6 +41,17 @@ byte brightness_1[256]={
   24,24,25,26,26,27,27,28,29,29,30,31,31,32,33,33,34,35,36,36,37,38,39,40,41,42,42,43,44,45,46,47,48,50,51,52,53,54,55,57,58,59,60,62,63,64,66,67,69,70,72,74,75,77,79,80,82,84,86,88,90,91,94,
   96,98,100,102,104,107,109,111,114,116,119,122,124,127,130,133,136,139,142,145,148,151,155,158,161,165,169,172,176,180,184,188,192,196,201,205,210,214,219,224,229,234,239,244,250,255};
 
+byte p1[8]={
+  0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10};
+byte p2[8]={
+  0x18,0x18,0x18,0x18,0x18,0x18,0x18,0x18};
+byte p3[8]={
+  0x1C,0x1C,0x1C,0x1C,0x1C,0x1C,0x1C,0x1C};
+byte p4[8]={
+  0x1E,0x1E,0x1E,0x1E,0x1E,0x1E,0x1E,0x1E};
+byte p5[8]={
+  0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F};
+
 #define MAX_COUNTER 768
 
 
@@ -54,7 +67,7 @@ unsigned int mode = 0;
 #endif
 
 
-int button2Hold = 0;
+unsigned long button2Hold = 0;
 
 unsigned long ledBrightnessDelay = 0;//(DELAY_TOTAL_TIME*60*1000)/MAX_COUNTER; //in miliseconds
 unsigned int inputThresholdLevel = 15;
@@ -147,7 +160,7 @@ int buttonPushed(int pinNum) {
 /*****************************************
  *       Multi Button Code Ends Here      * 
  ******************************************/
-
+int prevPotValue;
 int onModeBrightness = 0;
 float brightnessEXP = 0;
 int backlit = 100;
@@ -171,8 +184,7 @@ void setup(){
 
 
 
-  lcd.begin(8,2);
-  lcd.clear();
+  initLCD();
 #ifdef TEST_MODE
   lcd.print("TESTMODE");
   lcd.setCursor(0,1);
@@ -209,7 +221,7 @@ void setup(){
 }
 
 int lastButtonPressed = 0;
-int prevPotValue;
+
 
 int readAudioPin(){
   int readAudioValue = analogRead(AUDIO_PIN); 
@@ -222,12 +234,15 @@ int readAudioPin(){
 int inputOff = 0;
 int lastRef = 0;
 unsigned long lastAdjusted = 0;
+int adjustedBrightness = 0;
 
 void adjustBacklit(int backVal, int lightVal){
-
+/*
     int adj = map(lightVal,600,1024,0,150);
     if((backVal - adj) < 10) backVal = 10;
     else backVal-= adj;
+/**/    
+    adjustedBrightness = backVal;
     adjustLed(6, backVal);
 }
 /**/
@@ -236,17 +251,16 @@ void loop(){
   lightValue = analogRead(LIGHT_PIN); 
 
   
-  if((millis()-lastButtonPressedTime) > 200){
-    backlit = potValue;
+  if(abs(millis()-button2Hold) > 200){
+    backlit = analogRead(POT_PIN)/4;
     adjustBacklit(backlit,map(lightValue,500,1024,0,150));
-  
+    delay(500);
   }  
+  
   if(abs(millis()-lastAdjusted) > 200){
       adjustBacklit(backlit,map(lightValue,500,1024,0,150));
       lastAdjusted = millis();
   }
-  
-  
   
   /*
   int inputPin = POT_PIN;
@@ -499,8 +513,6 @@ void initMode(int newMode){
   timeElapsed = millis();
   mode = newMode;
 
-
-
 }
 
 
@@ -554,7 +566,7 @@ void updateDisplay(){
     lcd.print("M");
     lcd.print(mode);
     lcd.print(" ");
-    lcd.print(usedVal);
+    lcd.print(adjustedBrightness);
     lcd.print(" ");    
     if(time_in_mode < 100) {
       lcd.print(time_in_mode);      
@@ -567,6 +579,63 @@ void updateDisplay(){
     lastUpdated = millis();  
   }
 }
+
+
+void initLCD(){
+  delay(100);
+  lcd.createChar(0, p1);
+  lcd.createChar(1, p2);
+  lcd.createChar(2, p3);
+  lcd.createChar(3, p4);
+  lcd.createChar(4, p5);
+
+  lcd.begin(LCD_LENGTH, LCD_ROWS);
+  
+  
+
+}
+
+void printBar(int percentage){
+
+  double ratio = 100/(LCD_LENGTH*5);
+  double numberOfBars = percentage/ratio;
+  
+  int blocks      = floor(numberOfBars/5);
+  int remainder   = numberOfBars - (blocks*5);
+  int emptyBlocks = LCD_LENGTH-ceil(numberOfBars/5); 
+  
+  lcd.setCursor(0, 0);  
+  lcd.print(percentage);
+  lcd.print("% ");
+  lcd.setCursor(0, 1);    
+  
+  for(int i = 0; i < blocks;i++){
+    lcd.print((char)4);
+  }
+
+  if(remainder > 0){
+      // drawing charater's colums
+      switch (remainder) {
+      case 0:
+        break;
+      case 1:
+        lcd.print((char)0);
+        break;
+      case 2:
+        lcd.print((char)1);
+        break;
+      case 3:
+        lcd.print((char)2);
+        break;
+      case 4:
+        lcd.print((char)3);
+        break;
+      }
+  }
+  for(int i = 0; i < emptyBlocks;i++) lcd.print(" ");
+
+}
+
 
 
 
