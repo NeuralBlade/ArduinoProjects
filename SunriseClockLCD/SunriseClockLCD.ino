@@ -1,4 +1,4 @@
-//#define TEST_MODE
+#define TEST_MODE
 
 #define LCD_LENGTH 8.0
 #define LCD_ROWS 2
@@ -56,12 +56,12 @@ byte p5[8]={
 
 
 #ifdef TEST_MODE
-unsigned long  DELAY_TOTAL_TIME = 2;  //minutes
+unsigned long  DELAY_TOTAL_TIME = 10;  //seconds
 unsigned long DELAY_ENABLE_TIME = 5; //in seconds
 //unsigned int ledBrightnessDelay = 0;//(DELAY_TOTAL_TIME*60*1000)/MAX_COUNTER; //in miliseconds
 unsigned int mode = 1;
 #else
-unsigned long  DELAY_TOTAL_TIME = 30;  //minutes
+unsigned long  DELAY_TOTAL_TIME = 30*60;  //minutes
 unsigned long DELAY_ENABLE_TIME = 2.5*60*60; //in seconds
 unsigned int mode = 0;
 #endif
@@ -166,7 +166,7 @@ float brightnessEXP = 0;
 int backlit = 100;
 void setup(){
 
-  ledBrightnessDelay = (DELAY_TOTAL_TIME*60*1000)/MAX_COUNTER; //in miliseconds
+  ledBrightnessDelay = (DELAY_TOTAL_TIME*1000)/MAX_COUNTER; //in miliseconds
 #ifdef TEST_MODE
   Serial.begin(9600); 
   Serial.write("");
@@ -237,36 +237,36 @@ unsigned long lastAdjusted = 0;
 int adjustedBrightness = 0;
 
 void adjustBacklit(int backVal, int lightVal){
-/*
+  /*
     int adj = map(lightVal,600,1024,0,150);
-    if((backVal - adj) < 10) backVal = 10;
-    else backVal-= adj;
-/**/    
-    adjustedBrightness = backVal;
-    adjustLed(6, backVal);
+   if((backVal - adj) < 10) backVal = 10;
+   else backVal-= adj;
+  /**/
+  adjustedBrightness = backVal;
+  adjustLed(6, backVal);
 }
 /**/
 void loop(){
   potValue = analogRead(POT_PIN); 
   lightValue = analogRead(LIGHT_PIN); 
 
-  
+
   if(abs(millis()-button2Hold) > 200){
     backlit = analogRead(POT_PIN)/4;
     adjustBacklit(backlit,map(lightValue,500,1024,0,150));
     delay(500);
   }  
-  
+
   if(abs(millis()-lastAdjusted) > 200){
-      adjustBacklit(backlit,map(lightValue,500,1024,0,150));
-      lastAdjusted = millis();
+    adjustBacklit(backlit,map(lightValue,500,1024,0,150));
+    lastAdjusted = millis();
   }
-  
+
   /*
   int inputPin = POT_PIN;
-  int newReading = analogRead(inputPin);
-  
-  int diff = (newReading -lastRef);
+   int newReading = analogRead(inputPin);
+   
+   int diff = (newReading -lastRef);
    
    if(abs(diff) < NOISE_THRESHOLD){ //input changing too much, cant use it
    if(diff != 0){
@@ -555,24 +555,35 @@ unsigned long lastUpdated = 0;
 void updateDisplay(){
 
   if(abs(millis()-lastUpdated) > 250){
+
     unsigned int time_in_mode = (millis() - timeElapsed) / 1000 / 60; //time in seconds)
-    lcd.clear();
-    lcd.print(maxAudio);
-    lcd.print( " "  );
-    lcd.print(count);    
-    lcd.print( " "  );
-    lcd.print((lightValue/10)-25);   
-    lcd.setCursor(0,1);
-    lcd.print("M");
-    lcd.print(mode);
-    lcd.print(" ");
-    lcd.print(adjustedBrightness);
-    lcd.print(" ");    
-    if(time_in_mode < 100) {
-      lcd.print(time_in_mode);      
+    if(mode == 1 || mode ==3){
+      lcd.clear();
+      lcd.print("M");
+      lcd.print(mode);
+      printBar(map(count,0,MAX_COUNTER,0,100));
     } 
     else {
-      lcd.print(time_in_mode/60);      
+
+
+      lcd.clear();
+      lcd.print(maxAudio);
+      lcd.print( " "  );
+      lcd.print(count);    
+      lcd.print( " "  );
+      lcd.print((lightValue/10)-25);   
+      lcd.setCursor(0,1);
+      lcd.print("M");
+      lcd.print(mode);
+      lcd.print(" ");
+      lcd.print(adjustedBrightness);
+      lcd.print(" ");    
+      if(time_in_mode < 100) {
+        lcd.print(time_in_mode);      
+      } 
+      else {
+        lcd.print(time_in_mode/60);      
+      }
     }
     //lcd.print(lightValue);      
     maxAudio = 0;
@@ -590,8 +601,8 @@ void initLCD(){
   lcd.createChar(4, p5);
 
   lcd.begin(LCD_LENGTH, LCD_ROWS);
-  
-  
+
+
 
 }
 
@@ -599,42 +610,43 @@ void printBar(int percentage){
 
   double ratio = 100/(LCD_LENGTH*5);
   double numberOfBars = percentage/ratio;
-  
+
   int blocks      = floor(numberOfBars/5);
   int remainder   = numberOfBars - (blocks*5);
   int emptyBlocks = LCD_LENGTH-ceil(numberOfBars/5); 
-  
+
   lcd.setCursor(0, 0);  
   lcd.print(percentage);
   lcd.print("% ");
   lcd.setCursor(0, 1);    
-  
+
   for(int i = 0; i < blocks;i++){
     lcd.print((char)4);
   }
 
   if(remainder > 0){
-      // drawing charater's colums
-      switch (remainder) {
-      case 0:
-        break;
-      case 1:
-        lcd.print((char)0);
-        break;
-      case 2:
-        lcd.print((char)1);
-        break;
-      case 3:
-        lcd.print((char)2);
-        break;
-      case 4:
-        lcd.print((char)3);
-        break;
-      }
+    // drawing charater's colums
+    switch (remainder) {
+    case 0:
+      break;
+    case 1:
+      lcd.print((char)0);
+      break;
+    case 2:
+      lcd.print((char)1);
+      break;
+    case 3:
+      lcd.print((char)2);
+      break;
+    case 4:
+      lcd.print((char)3);
+      break;
+    }
   }
   for(int i = 0; i < emptyBlocks;i++) lcd.print(" ");
 
 }
+
 
 
 
