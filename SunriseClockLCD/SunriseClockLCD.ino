@@ -54,6 +54,8 @@ unsigned int mode = 0;
 #endif
 
 
+int button2Hold = 0;
+
 unsigned long ledBrightnessDelay = 0;//(DELAY_TOTAL_TIME*60*1000)/MAX_COUNTER; //in miliseconds
 unsigned int inputThresholdLevel = 15;
 unsigned int inputThresholdTime = 20;  //in seconds
@@ -148,6 +150,7 @@ int buttonPushed(int pinNum) {
 
 int onModeBrightness = 0;
 float brightnessEXP = 0;
+int backlit = 100;
 void setup(){
 
   ledBrightnessDelay = (DELAY_TOTAL_TIME*60*1000)/MAX_COUNTER; //in miliseconds
@@ -201,11 +204,12 @@ void setup(){
 
   initMode(mode);
 
-
-  adjustLed(6, 10);
+  prevPotValue = onModeBrightness;
+  adjustLed(6, backlit);
 }
 
 int lastButtonPressed = 0;
+int prevPotValue;
 
 int readAudioPin(){
   int readAudioValue = analogRead(AUDIO_PIN); 
@@ -217,31 +221,55 @@ int readAudioPin(){
 
 int inputOff = 0;
 int lastRef = 0;
+unsigned long lastAdjusted = 0;
 
+void adjustBacklit(int backVal, int lightVal){
+
+    int adj = map(lightVal,600,1024,0,150);
+    if((backVal - adj) < 10) backVal = 10;
+    else backVal-= adj;
+    adjustLed(6, backVal);
+}
+/**/
 void loop(){
-
-  int inputPin = POT_PIN;
-  int newReading = analogRead(inputPin);
-  int diff = (newReading -lastRef);
-
-  if(abs(diff) < NOISE_THRESHOLD){ //input changing too much, cant use it
-    if(diff != 0){
-      diff=diff/4;
-      adjustLed(STRIP1_PIN, str1+diff);        
-      adjustLed(STRIP2_PIN, str2+diff);        
-      adjustLed(STRIP3_PIN, str3+diff); 
-    }
-
-  } 
-  lastRef = newReading;
-  /**/
   potValue = analogRead(POT_PIN); 
   lightValue = analogRead(LIGHT_PIN); 
+
+  
+  if((millis()-lastButtonPressedTime) > 200){
+    backlit = potValue;
+    adjustBacklit(backlit,map(lightValue,500,1024,0,150));
+  
+  }  
+  if(abs(millis()-lastAdjusted) > 200){
+      adjustBacklit(backlit,map(lightValue,500,1024,0,150));
+      lastAdjusted = millis();
+  }
+  
+  
+  
+  /*
+  int inputPin = POT_PIN;
+  int newReading = analogRead(inputPin);
+  
+  int diff = (newReading -lastRef);
+   
+   if(abs(diff) < NOISE_THRESHOLD){ //input changing too much, cant use it
+   if(diff != 0){
+   diff=diff/4;
+   adjustLed(STRIP1_PIN, str1+diff);        
+   adjustLed(STRIP2_PIN, str2+diff);        
+   adjustLed(STRIP3_PIN, str3+diff); 
+   }
+   
+   } 
+   lastRef = newReading;
+  /**/
   //  potValue = readAnalog(POT_PIN); 
   //  lightValue = readAnalog(LIGHT_PIN); 
   //  adjustLed(6, (potValue-(lightValue/3))/4); // need to work on adjusting LCD brightness when its dark
-  
-  
+
+
   //adjustLed(6, map(potValue,0,1024,0,256)); // need to work on adjusting LCD brightness when its dark
 
 
@@ -351,8 +379,10 @@ void loop(){
         lastButtonPressed = buttNum;
         lastButtonPressedTime = millis();
       }
-
-    } 
+      if(buttNum == 2){
+        button2Hold = lastButtonPressedTime;
+      }
+    }  
     else {
       if(lastButtonPressed){
         unsigned long buttonPressedTime = millis()/lastButtonPressedTime;
@@ -361,6 +391,7 @@ void loop(){
 
 
       lastButtonPressed = 0;
+      button2Hold = 0;
     }
 
     //        if(lastButtonPressed != 0){
@@ -379,14 +410,9 @@ int prevStr3 = 0;
 
 
 void setBrightness(int brightness){
-
-
-
   if(brightness > MAX_COUNTER){
     brightness = MAX_COUNTER;
   }  
-
-
 
   if(brightness == 0 || brightness < 0){
     adjustLed(STRIP1_PIN, 0);        
@@ -394,7 +420,6 @@ void setBrightness(int brightness){
     adjustLed(STRIP3_PIN, 0); 
   } 
   else  {
-
     int newBrightness=brightness_1[brightness/3];
     int scale = brightness % 3;
     if(newBrightness < 25){
@@ -517,7 +542,7 @@ unsigned long lastUpdated = 0;
 
 void updateDisplay(){
 
-  if(abs(millis()-lastUpdated) > 333){
+  if(abs(millis()-lastUpdated) > 250){
     unsigned int time_in_mode = (millis() - timeElapsed) / 1000 / 60; //time in seconds)
     lcd.clear();
     lcd.print(maxAudio);
@@ -542,6 +567,7 @@ void updateDisplay(){
     lastUpdated = millis();  
   }
 }
+
 
 
 
